@@ -1,12 +1,36 @@
-# maritime-spill-analysis
-SIH26143: An automated maritime surveillance pipeline utilizing satellite data and AIS tracking to identify and analyze ocean oil spills
 
-## Frontend
+SIH26143: Problem Statement Analysis and System Limitations
+This document outlines the critical limitations, technological trade-offs, and maritime tracking vulnerabilities associated with the SIH26143 problem statement, which focuses on satellite-based marine oil spill detection and vessel attribution.
+1. Limitations of the Problem Statement
+The implementation of this solution faces several critical constraints stemming from remote sensing physics, maritime communication vulnerabilities, and oceanographic modeling complexities.
+Environmental and SAR Physics Limitations
+ * Strict Wind Speed Constraints: Synthetic Aperture Radar (SAR) detection of oil spills relies on capillary wave dampening. This mechanism is physically limited to an ambient wind speed window of approximately 3 m/s to 10 m/s. Below 3 m/s, the sea surface is entirely smooth, causing the whole ocean to appear dark on radar and destroying the necessary contrast. Above 10 m/s, vigorous wave action physically mixes the oil into the water column, rendering the slick invisible. Seasonal variability heavily dictates operational windows.
+ * The "Look-Alike" Problem: SAR detects spills based on reduced radar backscatter. Any natural phenomenon that smooths the ocean surface—such as algal blooms (biogenic slicks), localized rain cells, wind shadows behind islands, and upwelling zones—will look identical to an oil spill, triggering false positives that require complex machine learning architectures to filter out.
+ * Polarisation Dynamics and Signal Optimization: SAR platforms utilize dual-polarization (typically VV and VH channels) to capture different scattering mechanisms, and relying on a single channel limits accuracy. Co-polarized data (VV) is crucial for detecting the slick itself, as it is highly sensitive to the ocean's surface roughness and the capillary wave dampening effect. Conversely, cross-polarized data (VH) is less effective for distinguishing surface fluid dynamics but is essential for detecting the bright, hard-target backscatter of ships. Advanced systems must mathematically combine these channels into composite tensors to provide neural networks with a complete multidimensional representation.
+ * Inability to Measure Volume: SAR imagery is strictly a 2D surface representation. While it can map the geometric area of a spill, it cannot accurately penetrate the water to measure the exact thickness or total volume of the discharged oil, limiting full environmental damage assessments.
+AIS Tracking and Attribution Vulnerabilities
+ * Non-Cooperative Targets ("Dark Vessels"): The Automatic Identification System (AIS) is a cooperative radio transponder network. Vessels engaging in illicit operational discharges routinely disable their AIS units precisely when dumping bilges or tanks. The system must heavily rely on trajectory interpolation to estimate a ship's location during this "AIS gap."
+ * Spoofing and Signal Collision: Advanced illicit actors frequently spoof their AIS data to broadcast false coordinates. Furthermore, in highly congested areas (e.g., the Malacca Strait or Baltic Sea), satellite AIS receivers often suffer from VHF message collisions, leading to degraded track histories.
+Hydrodynamic Modeling Uncertainties
+ * Metocean Forcing Errors: Hindcasting (tracking the oil backward in time) is entirely dependent on the accuracy of third-party meteorological and oceanographic data (wind fields, surface currents, wave drift). Minor inaccuracies in a surface current velocity grid will compound exponentially over a backward simulation, resulting in a massive geographical uncertainty envelope rather than a precise origin point.
+ * Complex Weathering Physics: Accurately simulating how oil evaporates, emulsifies, and drifts requires knowing its exact chemical composition. Because the system detects unknown discharges, the model must make generalized assumptions about the hydrocarbon type (e.g., assuming it is heavy fuel oil), which introduces unavoidable error margins into drift calculations.
+Computational Latency
+ * Near Real-Time Bottlenecks: To catch fleeing vessels, authorities need actionable intelligence rapidly. However, downloading massive Level-1 SAR images, programmatically applying radiometric terrain correction, running deep learning segmentation, and cross-referencing millions of rows of global AIS traffic is highly compute-intensive. Achieving true near real-time alerts (30 to 60 minutes) requires highly optimized and expensive cloud infrastructure.
+2. Hyperspectral Imaging (HSI) Trade-offs
+Hyperspectral Imaging (HSI) is a powerful optical remote sensing technology that can supplement radar, but it comes with distinct operational trade-offs.
+Features (Capabilities)
+ * Chemical Identification: Unlike standard radar or multi-spectral sensors, HSI captures hundreds of contiguous, narrow spectral bands. This allows the sensor to resolve subtle, unique absorption features of hydrocarbons, identifying the spill based on its chemical composition rather than just its visual appearance.
+ * Heterogeneity and Weathering Mapping: By utilizing advanced physics-guided models (like linear and nonlinear spectral unmixing), HSI can map spatial heterogeneity across the interior of a slick. This helps determine fractional mixtures of oil and water, tracking how the oil is emulsifying and evolving.
+ * Actionable Intelligence: HSI transitions marine monitoring from a simple "slick present/absent" binary to answering critical response questions like "what kind of slick is it?" and "how thick is it?".
+Cons (Limitations)
+ * Weather and Daylight Dependency: Because HSI is an optical sensor, it is severely limited by environmental conditions. It cannot penetrate cloud cover, fog, or rain, and it is strictly daylight-limited, lacking the 24/7, all-weather capabilities of SAR.
+ * Atmospheric and Glint Interference: HSI data retrievals are highly sensitive to atmospheric interference, requiring complex corrections. Sensors are also negatively affected by ocean whitecaps and solar flare effects (sun glint) on the sea surface.
+ * Signal Limitations: HSI instruments can struggle with low signal-to-noise ratios when capturing data over very dark, absorbing ocean waters.
+ * Coverage Trade-offs: There is an inherent operational trade-off between achieving high spectral resolution and maintaining a wide geographic swath width, making it challenging to rapidly survey massive expanses of ocean.
+ * Calibration Challenges: There is a scarcity of standardized, in-situ ground-truth data for marine oil thickness and composition, making it difficult to transfer calibrations across different satellite or airborne platforms.
+3. AIS Vulnerabilities: Illegal and Illicit Activities
+Because AIS is a cooperative system physically controlled by the crew on the bridge, it is frequently disabled intentionally to conceal illicit activities. Bad actors will turn off the system to evade law enforcement and monitoring systems while engaging in:
+ * Illicit Oil Discharges: Ships often go dark precisely when illegally dumping oily bilge water or washing tanks into the ocean. This creates an "AIS gap" that makes it extremely difficult for authorities to attribute the resulting slick to their vessel.
+ * Illegal, Unreported, and Unregulated (IUU) Fishing: Commercial fishing vessels routinely disable their transponders when crossing into protected marine reserves or another country's Exclusive Economic Zone (EEZ) to poach fish without being tracked.
+ * Smuggling and Sanctions Evasion: Vessels transporting illegal cargo or attempting to bypass international trade sanctions will turn off their AIS to obscure their true ports of call or to conduct hidden ship-to-ship cargo transfers in the middle of the ocean.
 
-The Next.js frontend lives in the `frontend/` directory.
-
-```bash
-cd frontend
-pnpm install
-pnpm dev
-```
