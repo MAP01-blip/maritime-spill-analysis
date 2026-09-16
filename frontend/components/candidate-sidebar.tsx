@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils"
 import { MetricBadge, type Metric } from "@/components/metric-badge"
+import { ChemicalComposition } from "@/components/chemical-composition"
 import { AlertTriangle, CheckCircle2, MinusCircle, ShieldCheck } from "lucide-react"
 
 type RelevanceKey = "high" | "moderate" | "abstained"
@@ -94,6 +95,8 @@ export function CandidateSidebar({
 }) {
   return (
     <aside className="flex w-full flex-col gap-4 lg:w-[380px]">
+      <ChemicalComposition />
+
       <div className="flex-1 overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold tracking-tight">Candidate Ranking</h2>
