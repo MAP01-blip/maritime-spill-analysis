@@ -1,0 +1,71 @@
+# RESEARCH & TECHNICAL ARCHITECTURE: OILTRACE / MARITIME FORENSICS PIPELINE
+
+This document synthesizes the core data repositories, simulation frameworks, AIS tracking APIs, and open-source models required for satellite-based oil spill detection, reverse Lagrangian backtracking, and candidate vessel attribution.
+
+---
+
+## 1. Deep Learning & Satellite Imagery Datasets
+
+### **Sentinel-1 SAR Oil Spill Image Datasets (Parts I & III)**
+* **Zenodo Links:**
+  * [Part I Repository (DOI: 10.5281/zenodo.8346860)](https://zenodo.org/records/8346860)
+  * [Part III Repository (DOI: 10.5281/zenodo.13761290)](https://zenodo.org/records/13761290)
+* **Authors:** Trujillo-Acatitla, R., Tuxpan-Vargas, J., Ovando-Vázquez, C., & Monterrubio-Martínez, E. (2024).
+* **Contents & Format:** 
+  * Consists of large-scale Sentinel-1 Synthetic Aperture Radar (SAR) imagery collections designed for training, validating, and testing deep learning segmentation architectures.
+  * Provides Sigma0 ($\sigma^0$) images in decibels ($\text{dB}$) across dual polarizations (**VV** and **VH**).
+  * Includes corresponding binary pixel-level segmentation masks separating true oil slicks from look-alikes (e.g., biogenic slicks, low-wind areas, algal blooms).
+* **Integration Strategy:** Used to train backbone segmentation models (e.g., U-Net, SegFormer) to extract accurate spatial polygons of oil slicks from raw C-band satellite imagery.
+
+### **Companion Processing Toolkit: `slicksmith_ttom`**
+* **PyPI Reference:** [slicksmith_ttom on PyPI](https://pypi.org/project/slicksmith_ttom/)
+* **Functionality:** Provides specialized Python preprocessing routines for organizing Zenodo SAR datasets, structuring raster files for **TorchGeo** compatibility, adding pseudo-timestamps, and georeferencing raster label TIFFs to enable seamless intersection sampling.
+
+---
+
+## 2. Metocean & Environmental Data Hubs
+
+### **Copernicus Marine Service (CMEMS)**
+* **Portal Link:** [marine.copernicus.eu](https://marine.copernicus.eu/)
+* **Contents:** High-resolution ocean surface current vectors (`uo`, `vo`), sea surface temperature, and Stokes drift variables.
+* **Role in Pipeline:** Provides the dynamic hydrodynamic flow fields required by particle tracking models to simulate how ocean currents displace a surface slick over time.
+
+### **Copernicus Data Space Ecosystem**
+* **Portal Link:** [dataspace.copernicus.eu](https://dataspace.copernicus.eu/)
+* **Contents:** Direct API access to real-time and historical Sentinel-1 (SAR) and Sentinel-2 (Optical) imagery archives, alongside ERA5 reanalysis wind fields.
+* **Role in Pipeline Used For:** Automated nightly ingestion of raw C-band SAR frames when monitoring active regions or testing new slick detections.
+
+---
+
+## 3. Lagrangian Drift Simulation & Backtracking
+
+### **OpenDrift / OpenOil Framework**
+* **GitHub Repository:** [OpenDrift/opendrift](https://github.com/OpenDrift/opendrift)
+* **Architecture:** Python-based framework for trajectory and drift modeling of objects and substances in the ocean. 
+* **Core Mechanics for OilTrace:**
+  * **Forward Drift (Forecasting):** Simulates weathering, evaporation, dispersion, and movement of oil particles under wind and current forces.
+  * **Backward Drift (Hindcasting / Backtracking):** Reverses time steps using historical ERA5 wind fields and CMEMS ocean currents to trace an observed slick polygon back to its geographic **Source Corridor ($S$)** and **Origin Time Window ($T$)**.
+* **Integration Strategy:** Implemented as the physics core in Python to compute probabilistic origin heatmaps instead of relying on static proximity radius calculations.
+
+---
+
+## 4. Vessel Traffic & AIS Data Integration
+
+### **MarineCadastre AIS Data**
+* **Portal Link:** [marinecadastre.gov/accessais](https://marinecadastre.gov/accessais/)
+* **Contents:** Historical Automatic Identification System (AIS) vessel tracking data, including timestamped positions, Maritime Mobile Service Identities (MMSI), Speed Over Ground (SOG), Course Over Ground (COG), and vessel metadata.
+* **Role in Pipeline:** Used to reconstruct vessel tracks passing through or near reconstructed source corridors during the estimated release window.
+
+### **Global Fishing Watch (GFW): Radar-Illuminated Ocean**
+* **Data Portal:** [globalfishingwatch.org/data/radar-illuminated-ocean](https://globalfishingwatch.org/data/radar-illuminated-ocean/)
+* **Contents:** Datasets combining satellite radar observations with vessel tracking data to uncover dark targets—vessels operating with their AIS transponders turned off or obstructed.
+* **Role in Pipeline:** Informs the **Incomplete-AIS & Gap Reasoning** module, helping distinguish between routine satellite coverage blackouts and intentional transponder disablement near spill sites.
+
+---
+
+## 5. Reference Implementation Architecture
+
+### **Open-Source Reference: `oil-spill-detection`**
+* **GitHub Topic/Repo:** [prago-dev/oil-spill-detection](https://github.com/topics/oil-spill-detection) / Reference implementation patterns.
+* **Tech Stack Patterns:** Python, OpenCV, Flask, PostgreSQL, Deep Learning (YOLO/U-Net variants), and web dashboard interfaces.
+* **Role in Pipeline:** Serves as an architectural blueprint for connecting deep learning raster inference scripts with backend web frameworks (FastAPI) and spatial databases (PostGIS).
