@@ -1,4 +1,4 @@
-import { Droplets, Radio, Satellite } from "lucide-react"
+import { Droplets, Radio, Satellite, Database } from "lucide-react"
 
 export function DashboardHeader() {
   return (
@@ -23,6 +23,7 @@ export function DashboardHeader() {
       <div className="flex flex-wrap items-center gap-2">
         <StatusChip icon={Satellite} label="SAR feed" value="Live" tone="good" />
         <StatusChip icon={Radio} label="AIS" value="1 gap" tone="warn" />
+        <StatusChip icon={Database} label="Dataset" value="1,200" tone="good" />
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs">
           <span className="relative flex size-2">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-[oklch(0.75_0.15_75)] opacity-70" />
