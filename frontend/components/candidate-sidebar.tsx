@@ -1,7 +1,9 @@
 import { cn } from "@/lib/utils"
 import { MetricBadge, type Metric } from "@/components/metric-badge"
 import { ChemicalComposition } from "@/components/chemical-composition"
-import { AlertTriangle, CheckCircle2, MinusCircle, ShieldCheck } from "lucide-react"
+import { SarPreview } from "@/components/sar-preview"
+import type { Sample } from "@/components/dataset-explorer"
+import { AlertTriangle, CheckCircle2, MinusCircle, ShieldCheck, MapPin, Wind, Calendar, Target, Ship, Ruler } from "lucide-react"
 
 type RelevanceKey = "high" | "moderate" | "abstained"
 
@@ -89,10 +91,16 @@ const metricsById: Record<string, Metric[]> = {
 }
 
 export function CandidateSidebar({
+  sample,
   onAuditVesselA,
 }: {
+  sample?: Sample | null
   onAuditVesselA?: () => void
 }) {
+  if (sample) {
+    return <SelectedSpillPanel sample={sample} />
+  }
+
   return (
     <aside className="flex w-full flex-col gap-4 lg:w-[380px]">
       <ChemicalComposition />
@@ -174,5 +182,103 @@ export function CandidateSidebar({
         </ul>
       </div>
     </aside>
+  )
+}
+
+function SelectedSpillPanel({ sample }: { sample: Sample }) {
+  const radiusKm = Math.max(
+    Math.sqrt((sample.area_km2 * 1_000_000) / Math.PI) / 1000,
+    0.3
+  )
+
+  return (
+    <aside className="flex w-full flex-col lg:w-[380px]">
+      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card">
+        <div className="border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold tracking-tight">Selected Spill Analysis</h2>
+          <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+            Sample #{sample.id} · {sample.location.region}
+          </p>
+        </div>
+
+        <div className="p-4">
+          <div className="overflow-hidden rounded-lg border border-border bg-slate-950">
+            <div className="flex items-center justify-between border-b border-border bg-secondary/60 px-3 py-2">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-wide text-sky-300">
+                Segmentation mask shape
+              </span>
+              <span className="font-mono text-[10px] text-muted-foreground">1:1</span>
+            </div>
+            <SarPreview
+              sampleId={parseInt(sample.id)}
+              showMask
+              maskOnly
+              width={320}
+              height={220}
+              className="h-auto w-full rounded-none"
+            />
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Detection confidence</p>
+              <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">
+                {(sample.confidence * 100).toFixed(0)}%
+              </p>
+            </div>
+            <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+              {sample.confidence >= 0.85 ? "High confidence" : "Review required"}
+            </span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-full rounded-full bg-emerald-400 transition-[width]"
+              style={{ width: `${sample.confidence * 100}%` }}
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <SpillMetric icon={<Target className="size-3" />} label="Area" value={`${sample.area_km2.toFixed(1)} km²`} />
+            <SpillMetric icon={<Ruler className="size-3" />} label="Radius" value={`${radiusKm.toFixed(2)} km`} />
+            <SpillMetric icon={<MapPin className="size-3" />} label="Coordinates" value={`${sample.location.lat.toFixed(2)}°, ${sample.location.lon.toFixed(2)}°`} />
+            <SpillMetric icon={<Calendar className="size-3" />} label="Acquired" value={sample.acquisitionDate} />
+            <SpillMetric icon={<Wind className="size-3" />} label="Wind / sea" value={`${sample.windSpeed} m/s · state ${sample.seaState}`} />
+            <SpillMetric icon={<AlertTriangle className="size-3" />} label="Look-alike" value={`${Math.round(sample.lookAlikeProb * 100)}%`} />
+          </div>
+
+          <div className="mt-3 rounded-lg border border-border bg-secondary/20 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Nearby vessel attribution</p>
+            <div className="mt-2 flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-1.5 text-muted-foreground"><Ship className="size-3" /> MMSI</span>
+              <span className="font-mono text-foreground">{sample.vesselAttribution.mmsi}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground">Distance</span>
+              <span className="font-mono text-foreground">{sample.vesselAttribution.distance} km · {sample.vesselAttribution.status}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+function SpillMetric({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+}) {
+  return (
+    <div className="rounded-md border border-border bg-secondary/20 p-2">
+      <div className="flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <p className="mt-1 truncate font-mono text-[11px] text-foreground">{value}</p>
+    </div>
   )
 }

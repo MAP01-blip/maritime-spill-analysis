@@ -24,13 +24,13 @@ import {
   Radio,
 } from "lucide-react"
 
-interface Location {
+export interface Location {
   lat: number
   lon: number
   region: string
 }
 
-interface Sample {
+export interface Sample {
   id: string
   filename: string
   mask: string
@@ -86,7 +86,13 @@ const REGIONS = [
   "Gulf of Finland",
 ]
 
-export function DatasetExplorer() {
+export function DatasetExplorer({
+  selectedSample,
+  onSelectSample,
+}: {
+  selectedSample?: Sample | null
+  onSelectSample?: (sample: Sample | null) => void
+} = {}) {
   const [data, setData] = useState<DatasetData | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -94,7 +100,6 @@ export function DatasetExplorer() {
   const [region, setRegion] = useState("")
   const [minConfidence, setMinConfidence] = useState(0)
   const [showMasks, setShowMasks] = useState(false)
-  const [selectedSample, setSelectedSample] = useState<Sample | null>(null)
   const [showFilters, setShowFilters] = useState(false)
 
   const fetchData = useCallback(async () => {
@@ -125,8 +130,8 @@ export function DatasetExplorer() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1)
-    setSelectedSample(null)
-  }, [search, region, minConfidence])
+    onSelectSample?.(null)
+  }, [search, region, minConfidence, onSelectSample])
 
   return (
     <div className="flex flex-col gap-5 lg:flex-row">
@@ -258,7 +263,7 @@ export function DatasetExplorer() {
               {data.samples.map((sample) => (
                 <button
                   key={sample.id}
-                  onClick={() => setSelectedSample(sample)}
+                  onClick={() => onSelectSample?.(sample)}
                   className={cn(
                     "group relative flex flex-col bg-card p-2.5 text-left transition-colors hover:bg-secondary/40",
                     selectedSample?.id === sample.id && "bg-primary/5 ring-1 ring-inset ring-primary/30"
@@ -363,7 +368,7 @@ export function DatasetExplorer() {
                 </p>
               </div>
               <button
-                onClick={() => setSelectedSample(null)}
+                onClick={() => onSelectSample?.(null)}
                 className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
                 <X className="size-4" />
@@ -480,8 +485,8 @@ export function DatasetExplorer() {
                     value={
                       <span className={cn(
                         "rounded-full px-2 py-0.5 text-[10px] font-medium",
-                        selectedSample.vesselAttribution.status === "Active" 
-                          ? "bg-[oklch(0.7_0.14_145)]/15 text-[oklch(0.82_0.14_145)]" 
+                        selectedSample.vesselAttribution.status === "Active"
+                          ? "bg-[oklch(0.7_0.14_145)]/15 text-[oklch(0.82_0.14_145)]"
                           : "bg-destructive/15 text-destructive"
                       )}>
                         {selectedSample.vesselAttribution.status}

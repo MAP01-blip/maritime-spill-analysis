@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { SpillMap } from "@/components/spill-map"
 import { CandidateSidebar } from "@/components/candidate-sidebar"
 import { DriftSimulator } from "@/components/drift-simulator"
 import { EvidenceAuditTrail } from "@/components/evidence-audit-trail"
 import { DatasetExplorer } from "@/components/dataset-explorer"
+import type { Sample } from "@/components/dataset-explorer"
 import { cn } from "@/lib/utils"
 import { Layers, Database } from "lucide-react"
 
@@ -15,6 +16,12 @@ export function OiltraceWorkspace() {
   const [driftOpen, setDriftOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>("detection")
+  const [selectedSample, setSelectedSample] = useState<Sample | null>(null)
+
+  const handleSelectSample = useCallback((sample: Sample | null) => {
+    setSelectedSample(sample)
+    if (sample) setActiveTab("detection")
+  }, [])
 
   return (
     <>
@@ -56,14 +63,25 @@ export function OiltraceWorkspace() {
 
       {/* Tab content */}
       {activeTab === "detection" ? (
-        <div className="flex flex-col gap-5 lg:flex-row">
-          <div className="min-w-0 flex-1">
-            <SpillMap onInspectSlick={() => setDriftOpen(true)} />
+        <div className="flex min-h-0 flex-1 flex-col gap-5 lg:flex-row">
+          <div className="min-h-0 min-w-0 flex-1">
+            <SpillMap
+              sample={selectedSample}
+              onInspectSlick={() => setDriftOpen(true)}
+            />
           </div>
-          <CandidateSidebar onAuditVesselA={() => setAuditOpen(true)} />
+          <CandidateSidebar
+            sample={selectedSample}
+            onAuditVesselA={() => setAuditOpen(true)}
+          />
         </div>
       ) : (
-        <DatasetExplorer />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <DatasetExplorer
+            selectedSample={selectedSample}
+            onSelectSample={handleSelectSample}
+          />
+        </div>
       )}
 
       <DriftSimulator open={driftOpen} onOpenChange={setDriftOpen} />

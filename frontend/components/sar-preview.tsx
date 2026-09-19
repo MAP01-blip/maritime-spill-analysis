@@ -15,6 +15,7 @@ function mulberry32(seed: number) {
 interface SarPreviewProps {
   sampleId: number
   showMask?: boolean
+  maskOnly?: boolean
   className?: string
   width?: number
   height?: number
@@ -23,6 +24,7 @@ interface SarPreviewProps {
 export function SarPreview({
   sampleId,
   showMask = false,
+  maskOnly = false,
   className = "",
   width = 256,
   height = 256,
@@ -52,23 +54,25 @@ export function SarPreview({
     // Base ocean backscatter (darker = calmer ocean in SAR)
     const baseLevel = 25 + bgRand() * 15
 
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = (y * width + x) * 4
-        // Rayleigh-like speckle noise
-        const u1 = bgRand()
-        const u2 = bgRand()
-        const speckle = Math.sqrt(-2 * Math.log(Math.max(u1, 0.001))) * Math.cos(2 * Math.PI * u2)
-        const noise = baseLevel + speckle * 12
+    if (!maskOnly) {
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4
+          // Rayleigh-like speckle noise
+          const u1 = bgRand()
+          const u2 = bgRand()
+          const speckle = Math.sqrt(-2 * Math.log(Math.max(u1, 0.001))) * Math.cos(2 * Math.PI * u2)
+          const noise = baseLevel + speckle * 12
 
-        // Add subtle horizontal banding (SAR range artifact)
-        const banding = Math.sin(y * 0.08 + bgRand() * 0.3) * 3
+          // Add subtle horizontal banding (SAR range artifact)
+          const banding = Math.sin(y * 0.08 + bgRand() * 0.3) * 3
 
-        const val = Math.max(0, Math.min(255, noise + banding))
-        data[idx] = val * 0.7     // R (slight blue-green tint)
-        data[idx + 1] = val * 0.75
-        data[idx + 2] = val * 0.85
-        data[idx + 3] = 255
+          const val = Math.max(0, Math.min(255, noise + banding))
+          data[idx] = val * 0.7     // R (slight blue-green tint)
+          data[idx + 1] = val * 0.75
+          data[idx + 2] = val * 0.85
+          data[idx + 3] = 255
+        }
       }
     }
     ctx.putImageData(imageData, 0, 0)
@@ -95,28 +99,30 @@ export function SarPreview({
       curves.push({ cpx, cpy, x: curr[0], y: curr[1] })
     }
 
-    // Draw the spill as a dark patch
-    ctx.save()
-    ctx.beginPath()
-    ctx.moveTo(points[0][0], points[0][1])
-    for (const c of curves) {
-      ctx.quadraticCurveTo(c.cpx, c.cpy, c.x, c.y)
+    if (!maskOnly) {
+      // Draw the spill as a dark patch
+      ctx.save()
+      ctx.beginPath()
+      ctx.moveTo(points[0][0], points[0][1])
+      for (const c of curves) {
+        ctx.quadraticCurveTo(c.cpx, c.cpy, c.x, c.y)
+      }
+      ctx.closePath()
+
+      // Dark fill to simulate oil dampening radar backscatter
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseRadius * 1.2)
+      grad.addColorStop(0, "rgba(5, 8, 14, 0.85)")
+      grad.addColorStop(0.6, "rgba(8, 12, 20, 0.7)")
+      grad.addColorStop(1, "rgba(15, 20, 30, 0.3)")
+      ctx.fillStyle = grad
+      ctx.fill()
+
+      // Subtle bright edge (oil-water boundary in SAR)
+      ctx.strokeStyle = "rgba(90, 100, 120, 0.4)"
+      ctx.lineWidth = 1
+      ctx.stroke()
+      ctx.restore()
     }
-    ctx.closePath()
-
-    // Dark fill to simulate oil dampening radar backscatter
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseRadius * 1.2)
-    grad.addColorStop(0, "rgba(5, 8, 14, 0.85)")
-    grad.addColorStop(0.6, "rgba(8, 12, 20, 0.7)")
-    grad.addColorStop(1, "rgba(15, 20, 30, 0.3)")
-    ctx.fillStyle = grad
-    ctx.fill()
-
-    // Subtle bright edge (oil-water boundary in SAR)
-    ctx.strokeStyle = "rgba(90, 100, 120, 0.4)"
-    ctx.lineWidth = 1
-    ctx.stroke()
-    ctx.restore()
 
     // --- Optionally overlay segmentation mask ---
     if (showMask) {
@@ -141,31 +147,33 @@ export function SarPreview({
       ctx.fillText("MASK", cx - 14, cy + 3)
     }
 
-    // --- Draw grid overlay ---
-    ctx.strokeStyle = "rgba(100, 140, 170, 0.08)"
-    ctx.lineWidth = 0.5
-    ctx.setLineDash([])
-    const gridStep = 32
-    for (let x = 0; x < width; x += gridStep) {
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, height)
-      ctx.stroke()
-    }
-    for (let y = 0; y < height; y += gridStep) {
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(width, y)
-      ctx.stroke()
-    }
+    if (!maskOnly) {
+      // --- Draw grid overlay ---
+      ctx.strokeStyle = "rgba(100, 140, 170, 0.08)"
+      ctx.lineWidth = 0.5
+      ctx.setLineDash([])
+      const gridStep = 32
+      for (let x = 0; x < width; x += gridStep) {
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, height)
+        ctx.stroke()
+      }
+      for (let y = 0; y < height; y += gridStep) {
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(width, y)
+        ctx.stroke()
+      }
 
-    // --- Corner info overlay ---
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
-    ctx.fillRect(0, height - 18, width, 18)
-    ctx.fillStyle = "rgba(160, 190, 220, 0.9)"
-    ctx.font = "9px monospace"
-    ctx.fillText(`SAR σ⁰ (dB) · VV+VH · #${String(sampleId).padStart(4, "0")}`, 4, height - 6)
-  }, [seed, width, height, showMask, sampleId])
+      // --- Corner info overlay ---
+      ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
+      ctx.fillRect(0, height - 18, width, 18)
+      ctx.fillStyle = "rgba(160, 190, 220, 0.9)"
+      ctx.font = "9px monospace"
+      ctx.fillText(`SAR σ⁰ (dB) · VV+VH · #${String(sampleId).padStart(4, "0")}`, 4, height - 6)
+    }
+  }, [seed, width, height, showMask, maskOnly, sampleId])
 
   return (
     <canvas
@@ -173,7 +181,7 @@ export function SarPreview({
       style={{ width, height }}
       className={`block rounded-md ${className}`}
       role="img"
-      aria-label={`SAR preview for sample ${String(sampleId).padStart(4, "0")}${showMask ? " with segmentation mask overlay" : ""}`}
+      aria-label={`SAR preview for sample ${String(sampleId).padStart(4, "0")}${maskOnly ? " showing segmentation mask only" : showMask ? " with segmentation mask overlay" : ""}`}
     />
   )
 }
