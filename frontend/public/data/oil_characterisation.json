@@ -1,0 +1,21 @@
+{
+  "incident": "SLICK-0417",
+  "sensor": "Sentinel-2",
+  "reference": "PHC Spectral Library",
+  "status": "ESTIMATED",
+  "confidence": 0.81,
+  "characteristics": [
+    {
+      "label": "Crude Oil",
+      "value": 0.78
+    },
+    {
+      "label": "Oil Emulsion",
+      "value": 0.71
+    },
+    {
+      "label": "Heavy Hydrocarbon",
+      "value": 0.64
+    }
+  ]
+}

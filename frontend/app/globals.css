@@ -161,4 +161,27 @@
   body {
     @apply bg-background text-foreground;
   }
+  html, body {
+    overflow: hidden;
+    height: 100%;
+  }
+}
+
+/* Thin scrollbar for the investigation sidebar */
+aside::-webkit-scrollbar {
+  width: 6px;
+}
+aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+aside::-webkit-scrollbar-thumb {
+  background: oklch(0.5 0.02 240 / 40%);
+  border-radius: 3px;
+}
+aside::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0.03 240 / 60%);
+}
+aside {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.5 0.02 240 / 40%) transparent;
 }

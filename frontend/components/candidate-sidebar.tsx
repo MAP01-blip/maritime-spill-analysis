@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 import { MetricBadge, type Metric } from "@/components/metric-badge"
-import { ChemicalComposition } from "@/components/chemical-composition"
+import { OilCharacterisation } from "@/components/oil-characterisation"
 import { SarPreview } from "@/components/sar-preview"
 import type { Sample } from "@/components/dataset-explorer"
 import { AlertTriangle, CheckCircle2, MinusCircle, ShieldCheck, MapPin, Wind, Calendar, Target, Ship, Ruler } from "lucide-react"
@@ -102,14 +102,14 @@ export function CandidateSidebar({
   }
 
   return (
-    <aside className="flex w-full flex-col gap-4 lg:w-[380px]">
-      <ChemicalComposition />
+    <aside className="flex min-h-0 w-full flex-col gap-4 overflow-y-auto pr-0.5 lg:w-[380px]">
+      <OilCharacterisation />
 
-      <div className="flex-1 overflow-hidden rounded-xl border border-border bg-card">
+      <div className="shrink-0 rounded-xl border border-border bg-card shadow-xs">
         <div className="border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold tracking-tight">Candidate Ranking</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">Candidate Ranking</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Attribution confidence for {candidates.length} vessels near the estimated origin
+            Attribution confidence for {candidates.length} vessels near estimated origin
           </p>
         </div>
 
@@ -192,10 +192,10 @@ function SelectedSpillPanel({ sample }: { sample: Sample }) {
   )
 
   return (
-    <aside className="flex w-full flex-col lg:w-[380px]">
-      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card">
+    <aside className="flex min-h-0 w-full flex-col gap-4 overflow-y-auto pr-0.5 lg:w-[380px]">
+      <div className="shrink-0 rounded-xl border border-border bg-card shadow-xs">
         <div className="border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold tracking-tight">Selected Spill Analysis</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">Selected Spill Analysis</h2>
           <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
             Sample #{sample.id} · {sample.location.region}
           </p>
@@ -259,6 +259,8 @@ function SelectedSpillPanel({ sample }: { sample: Sample }) {
           </div>
         </div>
       </div>
+
+      <OilCharacterisation incidentId={`Sample #${sample.id}`} />
     </aside>
   )
 }
