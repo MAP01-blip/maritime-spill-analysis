@@ -17,9 +17,11 @@ export function OiltraceWorkspace() {
   const [auditOpen, setAuditOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>("detection")
   const [selectedSample, setSelectedSample] = useState<Sample | null>(null)
+  const [selectedCandidateRank, setSelectedCandidateRank] = useState<number>(1)
 
   const handleSelectSample = useCallback((sample: Sample | null) => {
     setSelectedSample(sample)
+    setSelectedCandidateRank(1)
     if (sample) setActiveTab("detection")
   }, [])
 
@@ -68,11 +70,16 @@ export function OiltraceWorkspace() {
             <SpillMap
               sample={selectedSample}
               onInspectSlick={() => setDriftOpen(true)}
+              onAuditVesselA={() => setAuditOpen(true)}
+              selectedCandidateRank={selectedCandidateRank}
+              onSelectCandidateRank={setSelectedCandidateRank}
             />
           </div>
           <CandidateSidebar
             sample={selectedSample}
             onAuditVesselA={() => setAuditOpen(true)}
+            selectedCandidateRank={selectedCandidateRank}
+            onSelectCandidateRank={setSelectedCandidateRank}
           />
         </div>
       ) : (

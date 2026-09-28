@@ -5,6 +5,12 @@ import { cn } from "@/lib/utils"
 import { SarPreview } from "@/components/sar-preview"
 import { DatasetStats } from "@/components/dataset-stats"
 import {
+  VesselAttributionBox,
+  getVesselAttributionForSample,
+  getVesselCandidatesForSample,
+  type VesselAttributionData,
+} from "@/components/vessel-attribution-box"
+import {
   Search,
   ChevronLeft,
   ChevronRight,
@@ -117,6 +123,7 @@ export function DatasetExplorer({
   const [minConfidence, setMinConfidence] = useState(0)
   const [showMasks, setShowMasks] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [explorerCandidateIndex, setExplorerCandidateIndex] = useState(0)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -513,32 +520,22 @@ export function DatasetExplorer({
                   value={`${Math.round(selectedSample.lookAlikeProb * 100)}%`}
                 />
 
-                <div className="mt-4 border-t border-border pt-4 space-y-2.5">
-                  <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Vessel Attribution (Simulated)</h4>
-                  <DetailRow
-                    icon={<Ship className="size-3" />}
-                    label="Vessel MMSI"
-                    value={selectedSample.vesselAttribution.mmsi}
-                  />
-                  <DetailRow
-                    icon={<Ruler className="size-3" />}
-                    label="Distance"
-                    value={`${selectedSample.vesselAttribution.distance} km`}
-                  />
-                  <DetailRow
-                    icon={<Radio className="size-3" />}
-                    label="AIS Status"
-                    value={
-                      <span className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-medium",
-                        selectedSample.vesselAttribution.status === "Active"
-                          ? "bg-[oklch(0.7_0.14_145)]/15 text-[oklch(0.82_0.14_145)]"
-                          : "bg-destructive/15 text-destructive"
-                      )}>
-                        {selectedSample.vesselAttribution.status}
-                      </span>
-                    }
-                  />
+                <div className="mt-4 border-t border-border pt-4">
+                  {(() => {
+                    const cands = getVesselCandidatesForSample(selectedSample)
+                    const activeCand = cands[explorerCandidateIndex] || cands[0]
+                    return (
+                      <VesselAttributionBox
+                        data={activeCand}
+                        candidates={cands}
+                        onSelectCandidate={(cand) => setExplorerCandidateIndex(cand.ranking - 1)}
+                        title="Attributed Suspect Vessel Dossier"
+                        variant="card"
+                        isCollapsible
+                        defaultExpanded
+                      />
+                    )
+                  })()}
                 </div>
 
                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-border bg-secondary/20 p-3 font-mono text-[10px]">
