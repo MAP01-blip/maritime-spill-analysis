@@ -38,6 +38,7 @@ export interface Sample {
   format: string
   polarization: string
   location: Location
+  spillLocationClass?: string
   confidence: number
   area_km2: number
   windSpeed: number
@@ -46,6 +47,18 @@ export interface Sample {
   lookAlikeProb: number
   vesselAttribution: { mmsi: string; distance: number; status: string }
   sarProcessing: string
+}
+
+export function getSpillLocationLabel(spillLocationClass?: string): string {
+  if (!spillLocationClass) return "Spill is on open water"
+  const normalized = spillLocationClass.toLowerCase().trim()
+  if (normalized === "water" || normalized === "sea" || normalized === "ocean") return "Spill is on open water"
+  if (normalized === "coastal" || normalized === "coast") return "Spill is in coastal water"
+  if (normalized === "bay" || normalized === "estuary") return "Spill is in bay / gulf"
+  if (normalized === "offshore" || normalized === "rig") return "Spill is at offshore area"
+  if (normalized === "land") return "Spill is on land"
+  if (normalized.startsWith("spill is")) return spillLocationClass
+  return `Spill is on ${spillLocationClass}`
 }
 
 interface DatasetData {
@@ -84,6 +97,8 @@ const REGIONS = [
   "Baltic Sea",
   "Strait of Gibraltar",
   "Gulf of Finland",
+  "Rotterdam Marine Approach",
+  "Singapore Marine Strait",
 ]
 
 export function DatasetExplorer({
@@ -98,6 +113,7 @@ export function DatasetExplorer({
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
   const [region, setRegion] = useState("")
+  const [locationClass, setLocationClass] = useState("")
   const [minConfidence, setMinConfidence] = useState(0)
   const [showMasks, setShowMasks] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
@@ -111,6 +127,7 @@ export function DatasetExplorer({
       })
       if (search) params.set("search", search)
       if (region) params.set("region", region)
+      if (locationClass) params.set("locationClass", locationClass)
       if (minConfidence > 0) params.set("minConfidence", String(minConfidence))
 
       const res = await fetch(`/api/dataset?${params}`)
@@ -121,7 +138,7 @@ export function DatasetExplorer({
     } finally {
       setLoading(false)
     }
-  }, [page, search, region, minConfidence])
+  }, [page, search, region, locationClass, minConfidence])
 
   useEffect(() => {
     fetchData()
@@ -131,7 +148,7 @@ export function DatasetExplorer({
   useEffect(() => {
     setPage(1)
     onSelectSample?.(null)
-  }, [search, region, minConfidence, onSelectSample])
+  }, [search, region, locationClass, minConfidence, onSelectSample])
 
   return (
     <div className="flex flex-col gap-5 lg:flex-row">
@@ -206,6 +223,22 @@ export function DatasetExplorer({
             <div className="flex flex-wrap items-center gap-3 border-b border-border bg-secondary/20 px-4 py-2.5">
               <div className="flex items-center gap-2">
                 <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Location Type
+                </label>
+                <select
+                  value={locationClass}
+                  onChange={(e) => setLocationClass(e.target.value)}
+                  className="h-7 rounded-md border border-border bg-card px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">All environment types</option>
+                  <option value="water">Spill on Water</option>
+                  <option value="land">Spill on Land</option>
+                  <option value="coastal">Spill in Coastal Zone</option>
+                  <option value="river">Spill on River</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Region
                 </label>
                 <select
@@ -238,10 +271,11 @@ export function DatasetExplorer({
                   {minConfidence > 0 ? `≥ ${minConfidence.toFixed(2)}` : "Any"}
                 </span>
               </div>
-              {(region || minConfidence > 0) && (
+              {(region || locationClass || minConfidence > 0) && (
                 <button
                   onClick={() => {
                     setRegion("")
+                    setLocationClass("")
                     setMinConfidence(0)
                   }}
                   className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/20"
@@ -285,6 +319,9 @@ export function DatasetExplorer({
                   <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                     <MapPin className="size-2.5" />
                     {sample.location.region}
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-medium text-sky-400/90">
+                    {getSpillLocationLabel(sample.spillLocationClass)}
                   </p>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">
                     {sample.area_km2} km² · {sample.acquisitionDate}
@@ -440,6 +477,15 @@ export function DatasetExplorer({
                   icon={<MapPin className="size-3" />}
                   label="Location"
                   value={`${selectedSample.location.lat}°, ${selectedSample.location.lon}° · ${selectedSample.location.region}`}
+                />
+                <DetailRow
+                  icon={<MapPin className="size-3" />}
+                  label="Spill Location"
+                  value={
+                    <span className="font-semibold text-primary">
+                      {getSpillLocationLabel(selectedSample.spillLocationClass)}
+                    </span>
+                  }
                 />
                 <DetailRow
                   icon={<Wind className="size-3" />}

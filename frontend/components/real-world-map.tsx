@@ -12,7 +12,7 @@ import {
 } from "react-leaflet"
 import type { LatLngExpression } from "leaflet"
 import { SarPreview } from "@/components/sar-preview"
-import type { Sample } from "@/components/dataset-explorer"
+import { getSpillLocationLabel, type Sample } from "@/components/dataset-explorer"
 
 function MapViewport({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap()
@@ -78,6 +78,8 @@ export function RealWorldMap({ sample, zoom }: { sample: Sample; zoom: number })
             <br />
             {sample.location.region}
             <br />
+            <em>{getSpillLocationLabel(sample.spillLocationClass)}</em>
+            <br />
             Spill area: {sample.area_km2.toFixed(1)} km²
           </Popup>
         </CircleMarker>
@@ -89,6 +91,7 @@ export function RealWorldMap({ sample, zoom }: { sample: Sample; zoom: number })
           {sample.location.lat.toFixed(3)}°N · {sample.location.lon.toFixed(3)}°E
         </div>
         <div className="text-[10px] text-slate-500">{sample.location.region}</div>
+        <div className="text-[10px] font-semibold text-cyan-800">{getSpillLocationLabel(sample.spillLocationClass)}</div>
         <div className="mt-1 border-t border-slate-300 pt-1 text-[10px] font-semibold text-slate-700">
           Spill: {sample.area_km2.toFixed(1)} km² · radius: {spillRadiusKm.toFixed(2)} km
         </div>

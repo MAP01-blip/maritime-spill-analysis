@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 import { MetricBadge, type Metric } from "@/components/metric-badge"
 import { OilCharacterisation } from "@/components/oil-characterisation"
 import { SarPreview } from "@/components/sar-preview"
-import type { Sample } from "@/components/dataset-explorer"
+import { getSpillLocationLabel, type Sample } from "@/components/dataset-explorer"
 import { AlertTriangle, CheckCircle2, MinusCircle, ShieldCheck, MapPin, Wind, Calendar, Target, Ship, Ruler } from "lucide-react"
 
 type RelevanceKey = "high" | "moderate" | "abstained"
@@ -241,6 +241,7 @@ function SelectedSpillPanel({ sample }: { sample: Sample }) {
             <SpillMetric icon={<Target className="size-3" />} label="Area" value={`${sample.area_km2.toFixed(1)} km²`} />
             <SpillMetric icon={<Ruler className="size-3" />} label="Radius" value={`${radiusKm.toFixed(2)} km`} />
             <SpillMetric icon={<MapPin className="size-3" />} label="Coordinates" value={`${sample.location.lat.toFixed(2)}°, ${sample.location.lon.toFixed(2)}°`} />
+            <SpillMetric icon={<MapPin className="size-3" />} label="Location" value={getSpillLocationLabel(sample.spillLocationClass)} />
             <SpillMetric icon={<Calendar className="size-3" />} label="Acquired" value={sample.acquisitionDate} />
             <SpillMetric icon={<Wind className="size-3" />} label="Wind / sea" value={`${sample.windSpeed} m/s · state ${sample.seaState}`} />
             <SpillMetric icon={<AlertTriangle className="size-3" />} label="Look-alike" value={`${Math.round(sample.lookAlikeProb * 100)}%`} />

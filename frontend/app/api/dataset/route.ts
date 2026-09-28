@@ -9,18 +9,20 @@ function seededRandom(seed: number) {
   }
 }
 
-// Realistic oil spill hotspot regions (lat, lon, label)
-const HOTSPOT_REGIONS = [
-  { lat: 38.5, lon: 15.6, label: "Mediterranean Sea" },
-  { lat: 28.3, lon: 50.5, label: "Persian Gulf" },
-  { lat: 1.3, lon: 104.0, label: "Malacca Strait" },
-  { lat: 29.0, lon: -88.5, label: "Gulf of Mexico" },
-  { lat: 57.5, lon: 5.0, label: "North Sea" },
-  { lat: -3.5, lon: 117.5, label: "Java Sea" },
-  { lat: 22.3, lon: 114.2, label: "South China Sea" },
-  { lat: 55.0, lon: 18.0, label: "Baltic Sea" },
-  { lat: 36.0, lon: -5.5, label: "Strait of Gibraltar" },
-  { lat: 60.0, lon: 30.0, label: "Gulf of Finland" },
+// Verified maritime oil spill hotspot regions (strictly in ocean/sea water bodies)
+const MARITIME_WATER_REGIONS = [
+  { lat: 36.5, lon: 18.0, label: "Mediterranean Sea", class: "water" },
+  { lat: 27.0, lon: 51.5, label: "Persian Gulf", class: "water" },
+  { lat: 2.8, lon: 101.1, label: "Malacca Strait", class: "coastal" },
+  { lat: 25.5, lon: -90.0, label: "Gulf of Mexico", class: "offshore" },
+  { lat: 56.5, lon: 3.5, label: "North Sea", class: "offshore" },
+  { lat: -5.0, lon: 112.0, label: "Java Sea", class: "water" },
+  { lat: 15.0, lon: 114.0, label: "South China Sea", class: "water" },
+  { lat: 57.5, lon: 19.5, label: "Baltic Sea", class: "water" },
+  { lat: 35.95, lon: -5.3, label: "Strait of Gibraltar", class: "coastal" },
+  { lat: 59.8, lon: 25.0, label: "Gulf of Finland", class: "bay" },
+  { lat: 52.1, lon: 3.5, label: "Rotterdam Marine Approach", class: "coastal" },
+  { lat: 1.15, lon: 103.6, label: "Singapore Marine Strait", class: "coastal" },
 ]
 
 export interface DatasetSample {
@@ -31,6 +33,7 @@ export interface DatasetSample {
   format: string
   polarization: string
   location: { lat: number; lon: number; region: string }
+  spillLocationClass: string
   confidence: number
   area_km2: number
   windSpeed: number
@@ -69,10 +72,14 @@ export interface DatasetResponse {
 function generateSample(index: number): DatasetSample {
   const rand = seededRandom(index + 42)
   const id = String(index + 1).padStart(4, "0")
-  const region = HOTSPOT_REGIONS[index % HOTSPOT_REGIONS.length]
 
-  const latOffset = (rand() - 0.5) * 4
-  const lonOffset = (rand() - 0.5) * 4
+  // All samples in the Sentinel-1 SAR maritime dataset are located in marine water bodies
+  const regionBase = MARITIME_WATER_REGIONS[index % MARITIME_WATER_REGIONS.length]
+  const spillLocationClass = regionBase.class
+
+  // Constrain random offset to small range (±0.15 deg) so coordinates never drift onto land
+  const latOffset = (rand() - 0.5) * 0.15
+  const lonOffset = (rand() - 0.5) * 0.15
 
   const confidence = 0.55 + rand() * 0.44 // 0.55 - 0.99
   const area = 0.8 + rand() * 45 // 0.8 - 45.8 km²
@@ -99,10 +106,11 @@ function generateSample(index: number): DatasetSample {
     format: "GeoTIFF (Sigma0, dB)",
     polarization: "VV + VH",
     location: {
-      lat: Math.round((region.lat + latOffset) * 100) / 100,
-      lon: Math.round((region.lon + lonOffset) * 100) / 100,
-      region: region.label,
+      lat: Math.round((regionBase.lat + latOffset) * 100) / 100,
+      lon: Math.round((regionBase.lon + lonOffset) * 100) / 100,
+      region: regionBase.label,
     },
+    spillLocationClass,
     confidence: Math.round(confidence * 100) / 100,
     area_km2: Math.round(area * 10) / 10,
     windSpeed: Math.round(windSpeed * 10) / 10,
@@ -121,6 +129,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("search") || ""
   const minConfidence = parseFloat(searchParams.get("minConfidence") || "0")
   const region = searchParams.get("region") || ""
+  const locationClass = searchParams.get("locationClass") || searchParams.get("spillLocationClass") || ""
 
   const TOTAL = 1200
 
@@ -133,6 +142,7 @@ export async function GET(request: NextRequest) {
     }
     if (minConfidence > 0 && sample.confidence < minConfidence) continue
     if (region && sample.location.region !== region) continue
+    if (locationClass && sample.spillLocationClass !== locationClass) continue
     allSamples.push(sample)
   }
 
