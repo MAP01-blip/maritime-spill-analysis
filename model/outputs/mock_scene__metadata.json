@@ -1,0 +1,9 @@
+{
+    "scene_id": "mock_scene",
+    "model_version": "unet_baseline_v1",
+    "threshold": 0.5,
+    "inference_timestamp": "2026-10-06T18:13:40.183565",
+    "input_channels": 2,
+    "geometry_status": "Valid",
+    "crs": "EPSG:4326"
+}
