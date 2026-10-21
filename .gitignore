@@ -13,8 +13,21 @@ __v0_jsx-dev-runtime.ts
 node_modules
 .next/
 .DS_Store
-*.pt
 
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# ML Checkpoints & Datasets
+*.pt
+*.pth
 *.tif
-
-*.pt
+*.tiff
+*.7z
+data_temp/
+data_dev/
+02_Test_images_and_ground_truth/

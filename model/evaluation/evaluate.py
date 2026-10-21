@@ -1,4 +1,5 @@
 import torch
+import os
 import argparse
 from torch.utils.data import DataLoader
 import numpy as np
@@ -25,9 +26,13 @@ def run_evaluation(args):
     
     model.eval()
 
-    # In a real scenario, this would load the 'val' or 'test' split.
-    # We mock it here, but logical separation is maintained.
-    dataset = SARDataset(images_dir="", masks_dir="", mock_mode=args.mock_mode, num_mock_samples=16)
+    if args.mock_mode or not os.path.exists(args.data_root):
+        dataset = SARDataset(mock_mode=True, num_mock_samples=16)
+    else:
+        from data.dataset import get_scene_splits
+        train_scenes, val_scenes = get_scene_splits(data_root=args.data_root, seed=args.seed)
+        dataset = SARDataset(scene_list=val_scenes, balance_ratio=1.0, seed=args.seed)
+
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False)
 
     print(f"Running on {len(dataset)} samples in {args.mode} mode.")
@@ -85,7 +90,9 @@ if __name__ == "__main__":
     parser.add_argument("--threshold", type=float, default=0.5, help="Threshold to use in test mode.")
     parser.add_argument("--checkpoint", type=str, default="model/checkpoints/unet__baseline_v1__best.pt")
     parser.add_argument("--batch_size", type=int, default=4)
-    parser.add_argument("--mock_mode", action="store_true", default=True)
+    parser.add_argument("--data_root", type=str, default="/Users/kingu/11/02_Test_images_and_ground_truth")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--mock_mode", action="store_true", default=False)
     
     args = parser.parse_args()
     

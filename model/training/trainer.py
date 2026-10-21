@@ -57,10 +57,13 @@ class OilTraceTrainer:
             
             total_loss += loss.item()
             
+            if (batch_idx + 1) % 50 == 0 or (batch_idx + 1) == len(self.train_loader):
+                print(f"  Batch [{batch_idx+1}/{len(self.train_loader)}] - Running Loss: {total_loss / (batch_idx + 1):.4f}")
+            
         elapsed = time.time() - start_time
         avg_loss = total_loss / len(self.train_loader)
         
-        print(f"Epoch [{epoch}/{self.epochs}] - Train Loss: {avg_loss:.4f} - Time: {elapsed:.2f}s")
+        print(f"Epoch [{epoch}/{self.epochs}] Complete - Train Loss: {avg_loss:.4f} - Time: {elapsed:.2f}s")
         return avg_loss
 
     @torch.no_grad()
