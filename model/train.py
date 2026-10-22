@@ -48,11 +48,13 @@ def main(args):
         train_dataset = SARDataset(
             scene_list=train_scenes,
             balance_ratio=args.balance_ratio,
+            augment=args.augment,
             seed=args.seed
         )
         val_dataset = SARDataset(
             scene_list=val_scenes,
             balance_ratio=args.balance_ratio,
+            augment=False,
             seed=args.seed
         )
     
@@ -131,6 +133,8 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42, help="Random seed (Section 43)")
     parser.add_argument("--num_workers", type=int, default=0, help="DataLoader workers")
     parser.add_argument("--mock_mode", action="store_true", default=False, help="Use mock dataset")
+    parser.add_argument("--augment", action="store_true", default=True, help="Enable random flips and rotations for training")
+    parser.add_argument("--no_augment", dest="augment", action="store_false", help="Disable data augmentation")
     
     args = parser.parse_args()
     main(args)

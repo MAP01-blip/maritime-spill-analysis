@@ -53,6 +53,7 @@ class SARDataset(Dataset):
         num_mock_samples=100,
         tile_size=512,
         normalize=True,
+        augment=False,
         balance_ratio=1.5,
         seed=42
     ):
@@ -65,6 +66,7 @@ class SARDataset(Dataset):
             num_mock_samples: number of synthetic samples if mock_mode=True.
             tile_size: tile dimension (512x512).
             normalize: whether to apply Z-score normalization with train stats.
+            augment: whether to apply geometric data augmentation (flips and rotations).
             balance_ratio: ratio of negative tiles to positive tiles (None to keep all).
         """
         self.transform = transform
@@ -72,6 +74,7 @@ class SARDataset(Dataset):
         self.num_mock_samples = num_mock_samples
         self.tile_size = tile_size
         self.normalize = normalize
+        self.augment = augment
 
         if self.mock_mode:
             print(f"[WARNING] SARDataset initialized in MOCK MODE ({self.num_mock_samples} samples).")
@@ -172,6 +175,24 @@ class SARDataset(Dataset):
 
         image_tensor = torch.from_numpy(image_np)
         mask_tensor = torch.from_numpy(mask_np)
+
+        # Geometric Data Augmentation (D4 Dihedral Group: Flips + 90/180/270 rotations)
+        if self.augment:
+            # 1. Random Horizontal Flip (p=0.5)
+            if random.random() > 0.5:
+                image_tensor = torch.flip(image_tensor, dims=[-1])
+                mask_tensor = torch.flip(mask_tensor, dims=[-1])
+            # 2. Random Vertical Flip (p=0.5)
+            if random.random() > 0.5:
+                image_tensor = torch.flip(image_tensor, dims=[-2])
+                mask_tensor = torch.flip(mask_tensor, dims=[-2])
+            # 3. Random Orthogonal Rotation (0, 90, 180, 270 degrees)
+            k = random.randint(0, 3)
+            if k > 0:
+                image_tensor = torch.rot90(image_tensor, k=k, dims=[-2, -1])
+                mask_tensor = torch.rot90(mask_tensor, k=k, dims=[-2, -1])
+            image_tensor = image_tensor.contiguous()
+            mask_tensor = mask_tensor.contiguous()
 
         if self.transform:
             image_tensor, mask_tensor = self.transform(image_tensor, mask_tensor)
